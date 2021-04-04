@@ -27,10 +27,15 @@ them to run my Godot projects.
 
 Ideally, I'd just give them a Windows or macOS executable.
 Unfortunately, project export does not yet work on Windows and
-macOS for projects that use the pythonscript addon.
+macOS for projects that use the pythonscript addon. Collaborators
+run my project by cloning my project, downloading Godot, then
+making an alias to execute Godot on my project's project.godot
+file. That much is reasonable. But asking people to also setup
+pythonscript and do the pip install steps is a bit much.
 
 So, instead of walking folks through downloading pythonscript via
-the Godot AssetLib:
+the Godot AssetLib and doing the pip install steps, I came up
+with this workaround:
 
 - I make this repo a git submodule in my Godot project
 - I tell my collaborators:
@@ -40,26 +45,60 @@ the Godot AssetLib:
 
 # Steps for making a new project
 
-Create a Godot project. Add this repo as a submodule:
+Create a Godot project. Copy the `pythonscript.gdnlib` into the
+project top level. Here it is:
 
-```bash
-git submodule add ...
+```
+[general]
+
+singleton=true
+load_once=true
+symbol_prefix="godot_"
+
+[entry]
+
+Windows.64="res://addons/pythonscript/windows-64/pythonscript.dll"
+
+[dependencies]
+
+Windows.64=[]
 ```
 
-The directory structure should be:
+Also create an `addons` folder at the top level:
+
+```bash
+mkdir addons
+```
+
+Add this repo as a submodule:
+
+```bash
+git submodule add https://github.com/sustainablelab/pythonscript-windows-64.git addons/pythonscript
+```
+
+*Notice the above command also puts the repo in the correct
+folder.*
+
+The directory structure should now be:
 
 ```
 project-folder/
+    pythonscript.gdnlib
     addons/
-        pythonscript/
-            SUBMODULE GOES HERE AND IS NAMED: windows-64/
+        SUBMODULE GOES HERE IN A FOLDER NAMED: pythonscript/
+            windows-64/
+    (other top-level files and folders)
 ```
 
-Similarly, Python packages that I wrote that are used in the
-project and are under development are treated the same way. I add
-the Python package as a submodule in the addons folder, then
-install it in **editable** mode for the python.exe *used by
-pythonscript*:
+*This mimics the structure when installed through the Godot
+AssetLib.*
+
+I treat Python packages I am developing for use in the project in
+the same way. I add the Python package as a submodule in the
+addons folder. I also install it in **editable** mode (with
+`-e`). For those unfamiliar, the python.exe *used by
+pythonscript* comes with no packages except for the `godot`
+package and you pip install whatever you need.
 
 ```
 project-folder/
@@ -69,10 +108,11 @@ project-folder/
                 python.exe <--- THIS PYTHON
 ```
 
-I install in **editable** mode so that collaborators get updates to
-my Python package simply by pulling the changes, rather than
-having to remember how to reinstall via pip. It also saves me
-time not having to upload minor patches to PyPI.
+I pip install my development packages in **editable** mode so
+that collaborators get updates to my Python package simply by
+pulling the submodule changes, rather than having to remember how
+to reinstall my package via pip. It also saves me time: pushing
+to a GitHub repo is much faster than re-uploading to PyPI.
 
 # Steps for cloning an existing project
 
